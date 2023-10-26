@@ -18,7 +18,7 @@ class CustomerController extends Controller
      */
     public function index()
     {
-        $data = Customer::all();
+        $data = Customer::with('reservations')->where('role', 'G')->get();
 
         return response()->json(['mess' => $data]);
     }
@@ -28,7 +28,7 @@ class CustomerController extends Controller
      */
     public function show(string $id)
     {
-        $customer = Customer::find($id);
+        $customer = Customer::with('reservations.salesMarketings', 'reservations.transaksiFasilitas.fasilitasTambahans', 'reservations.reservasiKamars.jenisKamars')->find($id);
 
         if ($customer) {
             return response()->json(['message' => 'Customer details', 'data' => $customer]);
