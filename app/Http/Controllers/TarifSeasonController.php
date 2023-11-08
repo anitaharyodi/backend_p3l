@@ -50,6 +50,14 @@ class TarifSeasonController extends Controller
             ], 400);
         }
 
+        $checkTarif = TarifSeason::where('id_jenis_kamar', $request->id_jenis_kamar)->where('id_season', $request->id_season)->first();
+
+        if ($checkTarif) {
+        return response()->json([
+            'status' => "F",
+            'message' => 'Room type must be unique'
+        ],400);}
+
         $tarifSeason = TarifSeason::create($credentials);
 
         return response()->json(['status' => 'T', 'message' => 'Tarif Season created successfully', 'data' => $tarifSeason], 201);

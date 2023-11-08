@@ -13,6 +13,7 @@ class ReservasiKamar extends Model
         'id_kamar',
         'id_reservasi',
         'id_jenis_kamar',
+        'hargaPerMalam',
     ];
 
     function reservasis() {

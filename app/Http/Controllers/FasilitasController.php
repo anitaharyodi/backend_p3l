@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\FasilitasTambahan;
+use App\Models\Reservasi;
+use App\Models\TransaksiFasilitas;
 use Illuminate\Validation\Rule;
 use Validator;
 use Carbon\Carbon;
@@ -115,5 +117,54 @@ class FasilitasController extends Controller
         } else {
             return response()->json(['status' => 'F','message' => 'Fasilitas Tambahan not found'], 404);
         }
+    }
+
+    public function transaksiFasilitas(Request $request, string $id) {
+        $reservasi = Reservasi::find($id);
+    
+        if (!$reservasi) {
+            return response()->json([
+                'status' => 'F',
+                'message' => 'Reservasi not found'
+            ], 404);
+        }
+    
+        $data = $request->json()->all();
+    
+        $transaksiFasilitasList = [];
+    
+        foreach ($data as $item) {
+            $credentials = [
+                'id_fasilitas' => $item['id_fasilitas'],
+                'tgl_pemakaian' => $item['tgl_pemakaian'],
+                'jumlah' => $item['jumlah'],
+                'subtotal' => $item['subtotal'],
+                'id_reservasi' => $reservasi->id,
+            ];
+    
+            $validate = Validator::make($credentials, [
+                'id_fasilitas' => 'required',
+                'tgl_pemakaian' => 'required|date',
+                'jumlah' => 'required|numeric',
+                'subtotal' => 'required',
+            ]);
+    
+            if ($validate->fails()) {
+                return response()->json([
+                    'status' => 'F',
+                    'message' => $validate->errors()
+                ], 400);
+            }
+    
+            $transaksiFasilitas = TransaksiFasilitas::create($credentials);
+            $transaksiFasilitas->load('fasilitasTambahans'); 
+            $transaksiFasilitasList[] = $transaksiFasilitas;
+        }
+    
+        return response()->json([
+            'status' => 'T',
+            'message' => 'Transaksi Fasilitas created successfully',
+            'data' => $transaksiFasilitasList,
+        ], 200);
     }
 }

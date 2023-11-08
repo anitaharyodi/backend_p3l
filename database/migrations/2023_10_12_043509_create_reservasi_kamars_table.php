@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('id_kamar')->nullable()->constrained(table: 'kamars')->cascadeOnUpdate()->cascadeOnDelete();
             $table->foreignId('id_reservasi')->constrained(table: 'reservasis')->cascadeOnUpdate()->cascadeOnDelete();
             $table->foreignId('id_jenis_kamar')->constrained(table: 'jenis_kamars')->cascadeOnUpdate()->cascadeOnDelete();
+            $table->integer('hargaPerMalam');
             $table->timestamps();
         });
     }

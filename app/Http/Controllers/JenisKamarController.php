@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\JenisKamar;
+use App\Models\Season;
 use Illuminate\Validation\Rule;
 use Validator;
 use Carbon\Carbon;
@@ -123,4 +124,42 @@ class JenisKamarController extends Controller
             return response()->json(['status' => 'F','message' => 'Jenis Kamar not found'], 404);
         }
     }
+
+    public function tarifBySeason(Request $request) {
+        $check_in = $request->input('tgl_checkin');
+        $check_out = $request->input('tgl_checkout');
+    
+        $season = Season::where('tanggal_mulai', '<=', $check_in)
+            ->where('tanggal_selesai', '>=', $check_in)
+            ->first();
+    
+        $jenisSeason = $season ? $season->jenis_season : null;
+        $tarifTotal = $season ? $season->tarif_total : 0;
+
+        $jenisKamars = JenisKamar::with(['tarifSeasons'])->get();
+    
+        foreach ($jenisKamars as $jenisKamar) {
+            $tarifNormal = $jenisKamar->tarif_normal;
+            $tarifSeasons = $jenisKamar->tarifSeasons;
+    
+            if ($season) {
+                foreach ($tarifSeasons as $tarifSeason) {
+                    if ($tarifSeason->id_season === $season->id) {
+                        if ($jenisSeason === 'Low') {
+                            $tarifNormal -= $tarifSeason->tarif;
+                        } elseif ($jenisSeason === 'High') {
+                            $tarifNormal += $tarifSeason->tarif;
+                        }
+                    }
+                }
+            }
+    
+            $jenisKamar->tarifBySeason = $tarifNormal;
+            unset($jenisKamar->tarifSeasons);
+        }
+    
+        return response()->json(['message' => 'Success', 'data' => $jenisKamars], 200);
+    }
+    
+    
 }

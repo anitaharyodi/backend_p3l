@@ -24,6 +24,11 @@ Route::post('password/reset/request', 'App\Http\Controllers\AuthController@forgo
 Route::post('password/reset', 'App\Http\Controllers\AuthController@resetPassword');
 Route::get('jenisKamar', 'App\Http\Controllers\JenisKamarController@index');
 Route::get('jenisKamar/{id}', 'App\Http\Controllers\JenisKamarController@show');
+Route::get('ketersediaanKamar', 'App\Http\Controllers\ReservasiKamarController@ketersediaanKamar');
+Route::get('tarifBySeason', 'App\Http\Controllers\JenisKamarController@tarifBySeason');
+
+
+
 
 Route::middleware(['auth:sanctum', 'ability:Admin'])->group(function(){
 
@@ -59,7 +64,6 @@ Route::middleware(['auth:sanctum', 'ability:Sales Marketing'])->group(function()
     Route::delete('season/{id}', 'App\Http\Controllers\SeasonController@destroy');
 
     // Fasilitas Tambahan
-    Route::get('fasilitas', 'App\Http\Controllers\FasilitasController@index');
     Route::post('fasilitas', 'App\Http\Controllers\FasilitasController@store');
     Route::get('fasilitas/{id}', 'App\Http\Controllers\FasilitasController@show');
     Route::post('fasilitas/{id}', 'App\Http\Controllers\FasilitasController@update');
@@ -88,8 +92,18 @@ Route::middleware(['auth:sanctum', 'ability:P,Sales Marketing'])->group(function
     Route::get('customer/{id}', 'App\Http\Controllers\CustomerController@show');
     Route::get('getProfile', 'App\Http\Controllers\CustomerController@getProfile');
 
-    //Reeservasi
+    //Reservasi
     Route::get('history/{id}', 'App\Http\Controllers\ReservasiController@show');
+    Route::post('reservasi', 'App\Http\Controllers\ReservasiController@store');
+    Route::post('/reservasi/upload-pembayaran/{id}', 'App\Http\Controllers\ReservasiController@uploadPembayaran');
+    Route::post('/reservasi/pemesananBatal/{id}', 'App\Http\Controllers\ReservasiController@pemesananBatal');
+    Route::get('/generate-pdf/{id}', 'App\Http\Controllers\ReservasiController@generateReservationPDF');
+    Route::post('/reservasi/{id}', 'App\Http\Controllers\ReservasiController@update');
+
+    //Fasilitas
+    Route::get('fasilitas', 'App\Http\Controllers\FasilitasController@index');
+    Route::post('transaksiFasilitas/{id}', 'App\Http\Controllers\FasilitasController@transaksiFasilitas');
+
 
 });
 
@@ -99,6 +113,9 @@ Route::middleware(['auth:sanctum', 'ability:P'])->group(function(){
     Route::post('customer/updateProfile', 'App\Http\Controllers\CustomerController@update');
     Route::post('customer/changePassword', 'App\Http\Controllers\CustomerController@changePassword');
     Route::get('history', 'App\Http\Controllers\CustomerController@getAllHistoryCustomer');
+
+    //Reservasi
+    
 
 });
 
