@@ -223,7 +223,7 @@ class ReservasiController extends Controller
 
             $reservation->reservasiKamars()->delete();
 
-            return response()->json(['status' => 'F', 'message' => $reservation], 200);
+            return response()->json(['status' => 'T', 'message' => $reservation], 200);
         }
     }
 
@@ -238,8 +238,11 @@ class ReservasiController extends Controller
 
         $pdf = PDF::loadView('pdf.reservation', ['reservation' => $reservation]);
         $pdf->setPaper('A4', 'portrait');
-    
-        return $pdf->download('reservation.pdf');
+        
+        $bookingId = $reservation->id_booking;
+        $filename = "reservation_$bookingId.pdf";
+        
+        return $pdf->download($filename);
     }
     
 
