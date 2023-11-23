@@ -18,4 +18,12 @@ class NotaLunas extends Model
         'pajak_layanan',
         'harga_total',
     ];
+
+    function reservasis() {
+        return $this->belongsTo(Reservasi::class, 'id_reservasi');
+    }
+
+    function frontOffices() {
+        return $this->belongsTo(AkunPegawai::class, 'id_fo');
+    }
 }

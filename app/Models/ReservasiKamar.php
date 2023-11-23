@@ -23,4 +23,8 @@ class ReservasiKamar extends Model
     function jenisKamars() {
         return $this->belongsTo(JenisKamar::class, 'id_jenis_kamar');
     }
+
+    function kamars() {
+        return $this->belongsTo(Kamar::class, 'id_kamar');
+    }
 }

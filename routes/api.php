@@ -25,8 +25,7 @@ Route::post('password/reset', 'App\Http\Controllers\AuthController@resetPassword
 Route::get('jenisKamar', 'App\Http\Controllers\JenisKamarController@index');
 Route::get('jenisKamar/{id}', 'App\Http\Controllers\JenisKamarController@show');
 Route::get('ketersediaanKamar', 'App\Http\Controllers\ReservasiKamarController@ketersediaanKamar');
-Route::get('tarifBySeason', 'App\Http\Controllers\JenisKamarController@tarifBySeason');
-
+Route::get('tarifBySeason', 'App\Http\Controllers\JenisKamarController@tarifBySeason'); 
 
 
 
@@ -46,9 +45,14 @@ Route::middleware(['auth:sanctum', 'ability:Admin'])->group(function(){
 
 });
 
-// Route::middleware(['auth:sanctum', 'ability:General Manager'])->group(function(){
+Route::middleware(['auth:sanctum', 'ability:General Manager,Owner'])->group(function(){
 
-// });
+    //Report
+    Route::get('customersPerMonth', 'App\Http\Controllers\CustomerController@customersPerMonth');
+    Route::get('totalPendapatan', 'App\Http\Controllers\ReservasiController@sumTotalHargaByPrefix');
+    Route::get('customerJenisKamar/{month}', 'App\Http\Controllers\CustomerController@countCustomersInMonthByJenisKamar');
+    Route::get('topCustomer', 'App\Http\Controllers\CustomerController@topCustomersWithMostReservations');
+});
 
 // Route::middleware(['auth:sanctum', 'ability:Owner'])->group(function(){
 
@@ -81,9 +85,19 @@ Route::middleware(['auth:sanctum', 'ability:Sales Marketing'])->group(function()
 
 });
 
-// Route::middleware(['auth:sanctum', 'ability:Front Office'])->group(function(){
+Route::middleware(['auth:sanctum', 'ability:Front Office'])->group(function(){
+    
+    //Check In
+    Route::get('dataReservasi', 'App\Http\Controllers\ReservasiController@index');
+    Route::post('checkin/{id}', 'App\Http\Controllers\ReservasiController@checkIn');
+    Route::get('/invoice-pdf/{id}', 'App\Http\Controllers\ReservasiController@generateNotaLunasPDF');
+    Route::post('checkout/{id}', 'App\Http\Controllers\ReservasiController@checkOut');
 
-// });
+    Route::get('kamar', 'App\Http\Controllers\KamarController@index');
+    Route::get('reservasiKamar', 'App\Http\Controllers\ReservasiKamarController@index');
+    
+
+});
 
 Route::middleware(['auth:sanctum', 'ability:P,Sales Marketing'])->group(function(){
 
@@ -100,10 +114,14 @@ Route::middleware(['auth:sanctum', 'ability:P,Sales Marketing'])->group(function
     Route::get('/generate-pdf/{id}', 'App\Http\Controllers\ReservasiController@generateReservationPDF');
     Route::post('/reservasi/{id}', 'App\Http\Controllers\ReservasiController@update');
 
+
+});
+
+Route::middleware(['auth:sanctum', 'ability:P,Sales Marketing,Front Office'])->group(function(){
+
     //Fasilitas
     Route::get('fasilitas', 'App\Http\Controllers\FasilitasController@index');
     Route::post('transaksiFasilitas/{id}', 'App\Http\Controllers\FasilitasController@transaksiFasilitas');
-
 
 });
 

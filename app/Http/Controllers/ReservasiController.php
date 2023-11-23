@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Reservasi;
 use App\Models\ReservasiKamar;
+use App\Models\NotaLunas;
+use App\Models\TransaksiFasilitas;
 use Validator;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -18,8 +20,13 @@ class ReservasiController extends Controller
      */
     public function index()
     {
-        
+        $data = Reservasi::with(['customers', 'reservasiKamars.jenisKamars', 'invoices'])
+            ->whereNotIn('status', ['Cancelled', 'Waiting for payment'])
+            ->get();
+    
+        return response()->json(['mess' => $data]);
     }
+    
 
     /**
      * Show the form for creating a new resource.
@@ -37,97 +44,93 @@ class ReservasiController extends Controller
      */
     public function store(Request $request)
     {
-    $credentials = $request->all();
-    
-    // Validate the input fields
-    $validate = Validator::make($credentials, [
-        'tgl_checkin' => 'required|date',
-        'tgl_checkout' => 'required|date|after:tgl_checkin',
-        'jumlah_dewasa' => 'required|numeric',
-        'jumlah_anak' => 'required|numeric',
-        'jenis_kamar' => 'required',
-    ]);
+        $credentials = $request->all();
+        
+        $validate = Validator::make($credentials, [
+            'tgl_checkin' => 'required|date',
+            'tgl_checkout' => 'required|date|after:tgl_checkin',
+            'jumlah_dewasa' => 'required|numeric',
+            'jumlah_anak' => 'required|numeric',
+            'jenis_kamar' => 'required',
+        ]);
 
-    if ($validate->fails()) {
-        return response()->json([
-            'status' => 'F',
-            'message' => $validate->errors()
-        ], 400);
-    }
-
-    $user = Auth::user();
-    $id = $user->id_customer;
-    $idPegawai = $user->id;
-
-    $prefix = ($id) ? 'P' : 'G';
-
-    // Generate the booking ID
-    $date = now();
-    $formattedDate = $date->format('dmy');
-    $nomorLastBookingUntukHariIni = Reservasi::where('id_booking', 'LIKE', $prefix . $formattedDate . '-%')
-    ->orderBy('id', 'desc')
-    ->limit(1)
-    ->value(\DB::raw('RIGHT(id_booking, 3)'));
-    
-    $increment = '001';
-    if ($nomorLastBookingUntukHariIni) {
-        $increment = str_pad($nomorLastBookingUntukHariIni + 1, 3, '0', STR_PAD_LEFT);
-    }
-    $bookingId = $prefix . $formattedDate . '-' . $increment;
-
-   
-    $reservasiData = array_merge($credentials, ['id_booking' => $bookingId, 'tgl_reservasi' => $date, 'status' => 'Waiting for payment']);
-
-    if ($id !== null) {
-        $reservasiData['id_customer'] = $id;
-    }else {
-        $reservasiData['id_sm'] = $idPegawai;
-    }
-
-
-    $total = 0;
-    foreach ($credentials['jenis_kamar'] as $jenisKamar) {
-        $jumlah = $jenisKamar['jumlah'];
-        for ($i = 0; $i < $jumlah; $i++) {
-            $total += $jumlah;
+        if ($validate->fails()) {
+            return response()->json([
+                'status' => 'F',
+                'message' => $validate->errors()
+            ], 400);
         }
-    }
 
-    $totalOrang = $credentials['jumlah_dewasa'] + $credentials['jumlah_anak'];
-    $minimalKamarPesan = floor($totalOrang/2);
-    if($total < $minimalKamarPesan) {
-        return response()->json([
-            'status' => 'F',
-            'message' => "Minimum number of rooms booked must be {$minimalKamarPesan}! "
-        ], 400);
-    }
+        $user = Auth::user();
+        $id = $user->id_customer;
+        $idPegawai = $user->id;
 
-    $reservasi = Reservasi::create($reservasiData);
+        $prefix = ($id) ? 'P' : 'G';
 
-    $reservasiKamars = [];
+        // Generate ID Booking
+        $date = now();
+        $formattedDate = $date->format('dmy');
+        $nomorLastBookingUntukHariIni = Reservasi::where('id_booking', 'LIKE', $prefix . $formattedDate . '-%')
+        ->orderBy('id', 'desc')
+        ->limit(1)
+        ->value(\DB::raw('RIGHT(id_booking, 3)'));
+        
+        $increment = '001';
+        if ($nomorLastBookingUntukHariIni) {
+            $increment = str_pad($nomorLastBookingUntukHariIni + 1, 3, '0', STR_PAD_LEFT);
+        }
+        $bookingId = $prefix . $formattedDate . '-' . $increment;
 
-    // // Process the jenis_kamar data
-    // $jenisKamarData = $request->input('jenis_kamar');
+    
+        $reservasiData = array_merge($credentials, ['id_booking' => $bookingId, 'tgl_reservasi' => $date, 'status' => 'Waiting for payment']);
 
-    if (is_array($credentials['jenis_kamar'])) {
+        if ($id !== null) {
+            $reservasiData['id_customer'] = $id;
+        }else {
+            $reservasiData['id_sm'] = $idPegawai;
+        }
+
+
+        $total = 0;
         foreach ($credentials['jenis_kamar'] as $jenisKamar) {
-            $id_jenis_kamar = $jenisKamar['id_jenis_kamar'];
             $jumlah = $jenisKamar['jumlah'];
-            $hargaPerMalam = $jenisKamar['hargaPerMalam'];
-
             for ($i = 0; $i < $jumlah; $i++) {
-                $reservasiKamar = ReservasiKamar::create([
-                    'id_reservasi' => $reservasi->id,
-                    'id_jenis_kamar' => $id_jenis_kamar,
-                    'hargaPerMalam' => $hargaPerMalam,
-                ]);
-                $reservasiKamars[] = $reservasiKamar;
+                $total += $jumlah;
             }
         }
-    }
+
+        $totalOrang = $credentials['jumlah_dewasa'] + $credentials['jumlah_anak'];
+        $minimalKamarPesan = floor($totalOrang/2);
+        if($total < $minimalKamarPesan) {
+            return response()->json([
+                'status' => 'F',
+                'message' => "Minimum number of rooms booked must be {$minimalKamarPesan}! "
+            ], 400);
+        }
+
+        $reservasi = Reservasi::create($reservasiData);
+
+        $reservasiKamars = [];
+
+        if (is_array($credentials['jenis_kamar'])) {
+            foreach ($credentials['jenis_kamar'] as $jenisKamar) {
+                $id_jenis_kamar = $jenisKamar['id_jenis_kamar'];
+                $jumlah = $jenisKamar['jumlah'];
+                $hargaPerMalam = $jenisKamar['hargaPerMalam'];
+
+                for ($i = 0; $i < $jumlah; $i++) {
+                    $reservasiKamar = ReservasiKamar::create([
+                        'id_reservasi' => $reservasi->id,
+                        'id_jenis_kamar' => $id_jenis_kamar,
+                        'hargaPerMalam' => $hargaPerMalam,
+                    ]);
+                    $reservasiKamars[] = $reservasiKamar;
+                }
+            }
+        }
 
 
-    return response()->json(['status' => 'T', 'message' => 'Reservasi created successfully', 'data' => ['reservasi' => $reservasi, 'reservasiKamar' => $reservasiKamars]], 201);
+        return response()->json(['status' => 'T', 'message' => 'Reservasi created successfully', 'data' => ['reservasi' => $reservasi, 'reservasiKamar' => $reservasiKamars]], 201);
 
     }
 
@@ -137,7 +140,7 @@ class ReservasiController extends Controller
      */
     public function show(string $id)
     {
-        $detailHistory = Reservasi::with(['customers', 'salesMarketings', 'frontOffices', 'transaksiFasilitas.fasilitasTambahans', 'reservasiKamars.jenisKamars'])->find($id);
+        $detailHistory = Reservasi::with(['customers', 'salesMarketings', 'frontOffices', 'transaksiFasilitas.fasilitasTambahans', 'reservasiKamars.jenisKamars', 'invoices'])->find($id);
 
         if ($detailHistory) {
             return response()->json(['message' => 'History details', 'data' => $detailHistory]);
@@ -173,7 +176,6 @@ class ReservasiController extends Controller
             $reservasi->tgl_pembayaran = now();
 
             if ($reservasi->id_sm) {
-                // If id_sm is present, request uang_jaminan input
                 if (!$request->has('uang_jaminan')) {
                     return response()->json(['status' => 'F', 'message' => 'Please provide uang_jaminan'], 400);
                 }
@@ -181,7 +183,7 @@ class ReservasiController extends Controller
                 $totalHarga = (float) $reservasi->total_harga;
 
                 if ($uangJaminan < 0.5 * $totalHarga) {
-                    return response()->json(['status' => 'F', 'message' => 'Uang jaminan must be at least 50% of total harga'], 400);
+                    return response()->json(['status' => 'F', 'message' => 'Uang jaminan must be at least 50% of total price'], 400);
                 }
                 $reservasi->uang_jaminan = $uangJaminan;
             }else {
@@ -244,7 +246,151 @@ class ReservasiController extends Controller
         
         return $pdf->download($filename);
     }
+
+
+    // Front Office
+
+    public function checkIn(Request $request, $id)
+    {
+        $reservasi = Reservasi::with('reservasiKamars')->find($id);
+        $user = Auth::user();
+        $idPegawai = $user->id;
+
+        $request->validate([
+            'kamar' => 'required|array',
+            'kamar.*.id' => 'required|integer',
+            'kamar.*.id_kamar' => 'required|integer',
+            'deposit' => 'required|numeric',
+        ]);
+
+
+        foreach ($request->kamar as $kamar) {
+            $reservasiKamar = ReservasiKamar::where('id', $kamar['id'])
+                ->where('id_reservasi', $id)
+                ->update(['id_kamar' => $kamar['id_kamar']]);
+        }
+        $reservasi->deposit = $request->deposit;
+        $reservasi->id_fo = $idPegawai;
+        $reservasi->status = 'Check-In';
+
+        $reservasi->save();
+
+        return response()->json(['message' => 'Check-in successful', 'data' => Reservasi::with('reservasiKamars')->find($id)]);
+    }
+
+    public function checkOut(Request $request, $id) {
+        $reservasi = Reservasi::find($id);
+
+        $request->validate([
+            'input_bayar' => 'required|numeric',
+        ]);
+
+        $user = Auth::user();
+        $id = $user->id_customer;
+        $idPegawai = $user->id;
+
+        $prefix = ($id) ? 'P' : 'G';
+
+        // Generate No Invoice
+        $dateString = $reservasi->tgl_checkout;
+        $date = is_string($dateString) ? new \DateTime($dateString) : $dateString;
+        $formattedDate = $date->format('dmy');
+        $nomorLastBookingUntukHariIni = NotaLunas::where('no_invoice', 'LIKE', $prefix . $formattedDate . '-%')
+        ->orderBy('id', 'desc')
+        ->limit(1)
+        ->value(\DB::raw('RIGHT(no_invoice, 3)'));
+        
+        $increment = '001';
+        if ($nomorLastBookingUntukHariIni) {
+            $increment = str_pad($nomorLastBookingUntukHariIni + 1, 3, '0', STR_PAD_LEFT);
+        }
+        $noInvoice = $prefix . $formattedDate . '-' . $increment;
+
+        $totalHargaLayanan = TransaksiFasilitas::where('id_reservasi', $reservasi->id)->sum('subtotal');
+        $pajakLayanan = $totalHargaLayanan * 0.1;
+
+        $totalHarga = $reservasi->total_harga_all ?? $reservasi->total_harga;
+        $hargaTotal = $totalHarga + $pajakLayanan;
+
+
+        $reservasi->update(['status' => 'Paid']);
+
+        $notaLunas = new NotaLunas([
+            'id_reservasi' => $reservasi->id,
+            'no_invoice' => $noInvoice,
+            'id_fo' => $reservasi->id_fo,
+            'tgl_lunas' => $reservasi->tgl_checkout,
+            'total_harga_layanan' => $totalHargaLayanan,
+            'pajak_layanan' => $pajakLayanan,
+            'harga_total' => $hargaTotal,
+        ]);
+        $notaLunas->save();
     
+        return response()->json(['message' => 'Check-out successful', 'data' => $reservasi]);
+    }
+
+    public function generateNotaLunasPDF($id)
+    {
+        $reservation = Reservasi::with(['customers', 'salesMarketings', 'frontOffices', 'transaksiFasilitas.fasilitasTambahans', 'reservasiKamars.jenisKamars', 'invoices'])->find($id);
+    
+        if (!$reservation) {
+            return view('pdf.invoice-not-found');
+        }
+
+        $pdf = PDF::loadView('pdf.invoice', ['reservation' => $reservation]);
+        $pdf->setPaper('A4', 'portrait');
+        
+        // $noInvoice = $invoice->id_booking;
+        $filename = "invoice.pdf";
+        
+        return $pdf->download($filename);
+    }
+
+    // Laporan 2
+    public function sumTotalHargaByPrefix()
+    {
+        $result = [];
+    
+        $currentYear = Carbon::now()->year;
+    
+        for ($month = 1; $month <= 12; $month++) {
+            $reservasis = Reservasi::whereYear('tgl_checkout', $currentYear)
+                ->whereMonth('tgl_checkout', $month)
+                ->get();
+    
+            $sumGrup = 0;
+            $sumPersonal = 0;
+    
+            foreach ($reservasis as $reservasi) {
+                $prefix = substr($reservasi->id_booking, 0, 1);
+
+                $column = ($reservasi->total_harga_all) ? 'total_harga_all' : 'total_harga';
+    
+                if ($reservasi->status == 'Waiting for payment') {
+                    $reservasi->$column = 0;
+                } elseif ($reservasi->status == 'Cancelled') {
+                    $reservasi->$column = ($reservasi->uang_jaminan) ? $reservasi->uang_jaminan : 0;
+                }
+    
+                if ($prefix === 'G') {
+                    $sumGrup += $reservasi->$column;
+                } elseif ($prefix === 'P') {
+                    $sumPersonal += $reservasi->$column;
+                }
+            }
+    
+            $totalAll = $sumGrup + $sumPersonal;
+    
+            $result[] = [
+                'bulan' => Carbon::create(null, $month, 1)->format('F'),
+                'grup' => $sumGrup,
+                'personal' => $sumPersonal,
+                'total' => $totalAll,
+            ];
+        }
+    
+        return response()->json($result);
+    }
 
 
     /**

@@ -28,6 +28,7 @@ return new class extends Migration
             $table->integer('total_harga');
             $table->integer('uang_jaminan');
             $table->integer('deposit')->nullable();
+            $table->integer('total_harga_all')->nullable();
             $table->text('special_req')->nullable();
             $table->timestamps();
         });

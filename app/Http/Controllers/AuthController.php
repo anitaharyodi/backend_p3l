@@ -100,6 +100,8 @@ class AuthController extends Controller
 
         if ($request->input('role') === 'P') {
             $validationRules['password'] = 'required|string';
+        }else {
+            $validationRules['id_sm'] = 'required|numeric';
         }
     
         $validate = Validator::make($request->all(), $validationRules);
@@ -119,7 +121,10 @@ class AuthController extends Controller
                 'password' => bcrypt($request->input('password')),
             ]);
         } else {
+            $customer->id_sm = $request->input('id_sm');
+            $customer->save();
             $akun = null;
+
         }
 
         return response()->json([

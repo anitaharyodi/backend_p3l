@@ -17,6 +17,7 @@ class Customer extends Model
         'no_telepon',
         'alamat',
         'role',
+        'id_sm',
     ];
 
     public function akunCustomers() {
@@ -25,5 +26,9 @@ class Customer extends Model
 
     public function reservations() {
         return $this->hasMany(Reservasi::class, 'id_customer', 'id');
+    }
+
+    function salesMarketings() {
+        return $this->belongsTo(AkunPegawai::class, 'id_sm');
     }
 }

@@ -8,8 +8,11 @@ use Validator;
 use Illuminate\Validation\Rule;
 use App\Models\AkunCustomer;
 use App\Models\AkunPegawai;
+use App\Models\ReservasiKamar;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Carbon\Carbon;
+
 
 class CustomerController extends Controller
 {
@@ -132,6 +135,60 @@ class CustomerController extends Controller
         $customer = AkunPegawai::with('reservationsForSM.customers')->find($user->id);
 
         return response()->json(['mess' => $customer]);
+    }
+
+
+    //Laporan 1
+    public function customersPerMonth()
+    {
+        $months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        $currentYear = date('Y');
+
+        $customersPerMonth = collect($months)->map(function ($month, $index) use ($currentYear) {
+            $count = Customer::whereYear('created_at', $currentYear)
+                ->whereMonth('created_at', $index + 1)
+                ->count();
+
+            return ['month' => $month, 'total' => $count];
+        });
+
+        return response()->json(['customers_per_month' => $customersPerMonth]);
+    }
+
+    // Laporan 3
+    public function countCustomersInMonthByJenisKamar($month)
+    {
+       
+    }
+
+    // Laporan 4
+    public function topCustomersWithMostReservations()
+    {
+        $currentYear = Carbon::now()->year;
+
+        $topCustomers = Customer::withCount(['reservations as total_reservations' => function ($query) use ($currentYear) {
+                $query->select(\DB::raw('COUNT(*)'))
+                    ->whereYear('tgl_reservasi', $currentYear)
+                    ->groupBy('id_customer')
+                    ->orderByDesc('total_reservations')
+                    ->limit(5);
+            }])
+            ->with(['reservations' => function ($query) use ($currentYear) {
+                $query->select('id_customer', \DB::raw('COUNT(*) as total_reservations'), \DB::raw('SUM(total_harga) as total_payment'))
+                    ->whereYear('tgl_reservasi', $currentYear)
+                    ->groupBy('id_customer')
+                    ->orderByDesc('total_reservations')
+                    ->limit(5);
+            }])
+            ->orderByDesc('total_reservations')
+            ->limit(5)
+            ->get(['id', 'nama', 'total_reservations']);
+
+        return response()->json(['top_customers' => $topCustomers]);
     }
 
 }

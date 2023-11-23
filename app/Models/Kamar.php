@@ -18,4 +18,8 @@ class Kamar extends Model
     function jenisKamars() {
         return $this->belongsTo(JenisKamar::class, 'id_jenis_kamar');
     }
+
+    public function reservasiKamars() {
+        return $this->hasMany(ReservasiKamar::class, 'id_kamar', 'id');
+    }
 }

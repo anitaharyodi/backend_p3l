@@ -159,6 +159,9 @@ class FasilitasController extends Controller
             $transaksiFasilitas = TransaksiFasilitas::create($credentials);
             $transaksiFasilitas->load('fasilitasTambahans'); 
             $transaksiFasilitasList[] = $transaksiFasilitas;
+
+            $reservasi->total_harga_all = $reservasi->total_harga + $reservasi->transaksiFasilitas()->sum('subtotal');
+            $reservasi->save(); 
         }
     
         return response()->json([

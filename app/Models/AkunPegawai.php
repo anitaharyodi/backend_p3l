@@ -34,4 +34,12 @@ class AkunPegawai extends Authenticatable
     public function reservationsForFO() {
         return $this->hasMany(Reservasi::class, 'id_fo', 'id');
     }
+
+    public function invoices() {
+        return $this->hasMany(NotaLunas::class, 'id_fo', 'id');
+    }
+
+    public function customerSM() {
+        return $this->hasMany(Customer::class, 'id_sm', 'id');
+    }
 }

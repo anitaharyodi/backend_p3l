@@ -25,6 +25,7 @@ class Reservasi extends Model
         'total_harga',
         'uang_jaminan',
         'deposit',
+        'total_harga_all',
         'special_req',
     ];
 
@@ -46,5 +47,9 @@ class Reservasi extends Model
 
     public function reservasiKamars() {
         return $this->hasMany(ReservasiKamar::class, 'id_reservasi', 'id');
+    }
+
+    public function invoices() {
+        return $this->hasMany(NotaLunas::class, 'id_reservasi', 'id');
     }
 }

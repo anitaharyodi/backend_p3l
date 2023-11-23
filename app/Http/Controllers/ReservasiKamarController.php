@@ -8,16 +8,43 @@ use App\Models\Kamar;
 use App\Models\Season;
 use App\Models\TarifSeason;
 use App\Models\JenisKamar;
+use App\Models\ReservasiKamar;
 
 class ReservasiKamarController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        //
-    }
+    public function index(Request $request)
+{
+    $tgl_checkin = $request->input('tgl_checkin');
+
+    $allRooms = Kamar::with('jenisKamars', 'reservasiKamars.reservasis.customers')->get();
+
+    $rooms = $allRooms->map(function ($room) use ($tgl_checkin) {
+        $isAvailable = true;
+
+        foreach ($room->reservasiKamars as $reservasiKamar) {
+            $tglCheckin = $reservasiKamar->reservasis->tgl_checkin;
+            $tglCheckout = $reservasiKamar->reservasis->tgl_checkout;
+
+            if ($tgl_checkin >= $tglCheckin && $tgl_checkin <= $tglCheckout) {
+                $isAvailable = false;
+                break;
+            }
+        }
+
+        return [
+            'room' => $room,
+            'is_available' => $isAvailable,
+        ];
+    });
+
+    return response()->json(['rooms' => $rooms]);
+}
+
+
+
 
     public function ketersediaanKamar(Request $request) {
         $check_in = $request->input('tgl_checkin');
