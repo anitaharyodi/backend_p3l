@@ -285,11 +285,9 @@ class ReservasiController extends Controller
             'input_bayar' => 'required|numeric',
         ]);
 
-        $user = Auth::user();
-        $id = $user->id_customer;
-        $idPegawai = $user->id;
+        $id = $reservasi->id_booking;
 
-        $prefix = ($id) ? 'P' : 'G';
+        $prefix = (substr($id, 0, 1) === 'P') ? 'P' : 'G';
 
         // Generate No Invoice
         $dateString = $reservasi->tgl_checkout;
@@ -311,7 +309,15 @@ class ReservasiController extends Controller
 
         $totalHarga = $reservasi->total_harga_all ?? $reservasi->total_harga;
         $hargaTotal = $totalHarga + $pajakLayanan;
+        $cash = $hargaTotal - ($reservasi->uang_jaminan + $reservasi->deposit);
 
+        if ($request->input_bayar < $cash) {
+            return response()->json(['status' => 'F', 'message' => 'Payment is still less than the total price!']);
+        }else if($request->input_bayar === $cash) {
+            $kembalian = 0;
+        }else {
+            $kembalian = $request->input_bayar - $cash;
+        }
 
         $reservasi->update(['status' => 'Paid']);
 
@@ -326,7 +332,7 @@ class ReservasiController extends Controller
         ]);
         $notaLunas->save();
     
-        return response()->json(['message' => 'Check-out successful', 'data' => $reservasi]);
+        return response()->json(['status' => 'T', 'message' => 'Check-out successful', 'data' => $reservasi, 'kembalian' => $kembalian]);
     }
 
     public function generateNotaLunasPDF($id)

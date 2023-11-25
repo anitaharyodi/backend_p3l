@@ -107,7 +107,6 @@ Route::middleware(['auth:sanctum', 'ability:P,Sales Marketing'])->group(function
     Route::get('getProfile', 'App\Http\Controllers\CustomerController@getProfile');
 
     //Reservasi
-    Route::get('history/{id}', 'App\Http\Controllers\ReservasiController@show');
     Route::post('reservasi', 'App\Http\Controllers\ReservasiController@store');
     Route::post('/reservasi/upload-pembayaran/{id}', 'App\Http\Controllers\ReservasiController@uploadPembayaran');
     Route::post('/reservasi/pemesananBatal/{id}', 'App\Http\Controllers\ReservasiController@pemesananBatal');
@@ -122,6 +121,8 @@ Route::middleware(['auth:sanctum', 'ability:P,Sales Marketing,Front Office'])->g
     //Fasilitas
     Route::get('fasilitas', 'App\Http\Controllers\FasilitasController@index');
     Route::post('transaksiFasilitas/{id}', 'App\Http\Controllers\FasilitasController@transaksiFasilitas');
+
+    Route::get('history/{id}', 'App\Http\Controllers\ReservasiController@show');
 
 });
 

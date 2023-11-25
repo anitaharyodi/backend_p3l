@@ -134,40 +134,57 @@ class FasilitasController extends Controller
         $transaksiFasilitasList = [];
     
         foreach ($data as $item) {
-            $credentials = [
-                'id_fasilitas' => $item['id_fasilitas'],
-                'tgl_pemakaian' => $item['tgl_pemakaian'],
-                'jumlah' => $item['jumlah'],
-                'subtotal' => $item['subtotal'],
-                'id_reservasi' => $reservasi->id,
-            ];
+            $existingTransaction = TransaksiFasilitas::where('id_fasilitas', $item['id_fasilitas'])
+                ->where('tgl_pemakaian', $item['tgl_pemakaian'])
+                ->where('id_reservasi', $reservasi->id)
+                ->first();
     
-            $validate = Validator::make($credentials, [
-                'id_fasilitas' => 'required',
-                'tgl_pemakaian' => 'required|date',
-                'jumlah' => 'required|numeric',
-                'subtotal' => 'required',
-            ]);
+            if ($existingTransaction) {
+                // Update existing transaction
+                $existingTransaction->jumlah += $item['jumlah'];
+                $existingTransaction->subtotal += $item['subtotal'];
+                $existingTransaction->save();
     
-            if ($validate->fails()) {
-                return response()->json([
-                    'status' => 'F',
-                    'message' => $validate->errors()
-                ], 400);
+                $transaksiFasilitasList[] = $existingTransaction;
+            } else {
+                // Create new transaction
+                $credentials = [
+                    'id_fasilitas' => $item['id_fasilitas'],
+                    'tgl_pemakaian' => $item['tgl_pemakaian'],
+                    'jumlah' => $item['jumlah'],
+                    'subtotal' => $item['subtotal'],
+                    'id_reservasi' => $reservasi->id,
+                ];
+    
+                $validate = Validator::make($credentials, [
+                    'id_fasilitas' => 'required',
+                    'tgl_pemakaian' => 'required|date',
+                    'jumlah' => 'required|numeric',
+                    'subtotal' => 'required',
+                ]);
+    
+                if ($validate->fails()) {
+                    return response()->json([
+                        'status' => 'F',
+                        'message' => $validate->errors()
+                    ], 400);
+                }
+    
+                $transaksiFasilitas = TransaksiFasilitas::create($credentials);
+                $transaksiFasilitas->load('fasilitasTambahans');
+                $transaksiFasilitasList[] = $transaksiFasilitas;
             }
     
-            $transaksiFasilitas = TransaksiFasilitas::create($credentials);
-            $transaksiFasilitas->load('fasilitasTambahans'); 
-            $transaksiFasilitasList[] = $transaksiFasilitas;
-
+            // Update total harga_all for the reservation
             $reservasi->total_harga_all = $reservasi->total_harga + $reservasi->transaksiFasilitas()->sum('subtotal');
-            $reservasi->save(); 
+            $reservasi->save();
         }
     
         return response()->json([
             'status' => 'T',
-            'message' => 'Transaksi Fasilitas created successfully',
+            'message' => 'Transaksi Fasilitas created/updated successfully',
             'data' => $transaksiFasilitasList,
         ], 200);
-    }
+    }    
+    
 }

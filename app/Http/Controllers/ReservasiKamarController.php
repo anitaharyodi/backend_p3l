@@ -16,32 +16,32 @@ class ReservasiKamarController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request)
-{
-    $tgl_checkin = $request->input('tgl_checkin');
+    {
+        $tgl_checkin = $request->input('tgl_checkin');
 
-    $allRooms = Kamar::with('jenisKamars', 'reservasiKamars.reservasis.customers')->get();
+        $allRooms = Kamar::with('jenisKamars', 'reservasiKamars.reservasis.customers')->get();
 
-    $rooms = $allRooms->map(function ($room) use ($tgl_checkin) {
-        $isAvailable = true;
+        $rooms = $allRooms->map(function ($room) use ($tgl_checkin) {
+            $isAvailable = true;
 
-        foreach ($room->reservasiKamars as $reservasiKamar) {
-            $tglCheckin = $reservasiKamar->reservasis->tgl_checkin;
-            $tglCheckout = $reservasiKamar->reservasis->tgl_checkout;
+            foreach ($room->reservasiKamars as $reservasiKamar) {
+                $tglCheckin = $reservasiKamar->reservasis->tgl_checkin;
+                $tglCheckout = $reservasiKamar->reservasis->tgl_checkout;
 
-            if ($tgl_checkin >= $tglCheckin && $tgl_checkin <= $tglCheckout) {
-                $isAvailable = false;
-                break;
+                if ($tgl_checkin >= $tglCheckin && $tgl_checkin <= $tglCheckout && $reservasiKamar->reservasis->status === 'Check-In') {
+                    $isAvailable = false;
+                    break;
+                }
             }
-        }
 
-        return [
-            'room' => $room,
-            'is_available' => $isAvailable,
-        ];
-    });
+            return [
+                'room' => $room,
+                'is_available' => $isAvailable,
+            ];
+        });
 
-    return response()->json(['rooms' => $rooms]);
-}
+        return response()->json(['rooms' => $rooms]);
+    }
 
 
 
