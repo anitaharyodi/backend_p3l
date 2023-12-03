@@ -50,7 +50,7 @@ Route::middleware(['auth:sanctum', 'ability:General Manager,Owner'])->group(func
     //Report
     Route::get('customersPerMonth', 'App\Http\Controllers\CustomerController@customersPerMonth');
     Route::get('totalPendapatan', 'App\Http\Controllers\ReservasiController@sumTotalHargaByPrefix');
-    Route::get('customerJenisKamar/{month}', 'App\Http\Controllers\CustomerController@countCustomersInMonthByJenisKamar');
+    Route::get('customerJenisKamar', 'App\Http\Controllers\ReservasiController@countCustomersInMonthByJenisKamar');
     Route::get('topCustomer', 'App\Http\Controllers\CustomerController@topCustomersWithMostReservations');
 });
 

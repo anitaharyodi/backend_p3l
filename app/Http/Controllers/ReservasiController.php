@@ -7,6 +7,7 @@ use App\Models\Reservasi;
 use App\Models\ReservasiKamar;
 use App\Models\NotaLunas;
 use App\Models\TransaksiFasilitas;
+use App\Models\JenisKamar;
 use Validator;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -397,6 +398,116 @@ class ReservasiController extends Controller
     
         return response()->json($result);
     }
+
+    // Laporan 3
+    public function countCustomersInMonthByJenisKamar(Request $request)
+    {
+        $month = $request->input('month');
+        if (!is_numeric($month) || $month < 1 || $month > 12) {
+            return response()->json(['error' => 'Invalid month. Please provide a numeric value between 1 and 12.']);
+        }
+    
+        $currentYear = date('Y');
+    
+        $results = ReservasiKamar::with(['reservasis', 'jenisKamars'])
+            ->join('reservasis', 'reservasi_kamars.id_reservasi', '=', 'reservasis.id')
+            ->whereYear('reservasis.tgl_checkin', '=', $currentYear)
+            ->whereMonth('reservasis.tgl_checkin', '=', $month)
+            ->whereNotIn('reservasis.status', ['Cancelled', 'Waiting for payment'])
+            ->get();
+    
+        $jenisKamarValues = JenisKamar::pluck('id')->toArray();
+
+        $counts = [];
+
+        foreach ($jenisKamarValues as $jenisKamar) {
+            $counts[$jenisKamar] = [
+                'id_jenis_kamar' => $jenisKamar,
+                'grup' => 0,
+                'personal' => 0,
+                'total' => 0,
+                'jenisKamars' => JenisKamar::find($jenisKamar)
+            ];
+        }
+
+        foreach ($results as $result) {
+            $jenisKamar = $result->jenisKamars->id ?? null;
+            $jumlahAnak = $result->reservasis->jumlah_anak;
+            $jumlahDewasa = $result->reservasis->jumlah_dewasa;
+        
+            $totalCustomers = $jumlahAnak + $jumlahDewasa;
+        
+            $category = (substr($result->reservasis->id_booking, 0, 1) === 'P') ? 'personal' : 'grup';
+        
+            if (!isset($counts[$jenisKamar])) {
+                $counts[$jenisKamar] = [
+                    'id_jenis_kamar' => $jenisKamar,
+                    'grup' => 0,
+                    'personal' => 0,
+                    'total' => 0,
+                    'jenisKamars' => JenisKamar::find($jenisKamar)
+                ];
+            }
+        
+            $customersToDistribute = $totalCustomers;
+        
+            while ($customersToDistribute > 0) {
+                if (isset($counts[$jenisKamar])) {
+                    $customersThisRound = min($customersToDistribute, 2);
+                    $counts[$jenisKamar][$category] += $customersThisRound;
+                    $counts[$jenisKamar]['total'] += $customersThisRound;
+                    $customersToDistribute -= $customersThisRound;
+                }
+        
+            }
+            
+            $jenisKamar = $this->getNextJenisKamar($jenisKamar, $counts);
+            $counts[$jenisKamar]['jenisKamars'] = JenisKamar::find($jenisKamar);
+        }
+    
+        $counts = array_values($counts);
+    
+        return response()->json($counts);
+    }
+    
+    private function getNextJenisKamar($currentJenisKamar, $counts)
+    {
+        $found = false;
+        $jenisKamars = array_keys($counts);
+        
+        foreach ($jenisKamars as $jenisKamar) {
+            if ($found) {
+                return $jenisKamar;
+            }
+    
+            if ($jenisKamar === $currentJenisKamar) {
+                $found = true;
+            }
+        }
+    
+        return reset($jenisKamars);
+    }
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
 
 
     /**

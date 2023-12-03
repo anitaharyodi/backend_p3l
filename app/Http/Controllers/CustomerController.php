@@ -159,12 +159,6 @@ class CustomerController extends Controller
         return response()->json(['customers_per_month' => $customersPerMonth]);
     }
 
-    // Laporan 3
-    public function countCustomersInMonthByJenisKamar($month)
-    {
-       
-    }
-
     // Laporan 4
     public function topCustomersWithMostReservations()
     {
