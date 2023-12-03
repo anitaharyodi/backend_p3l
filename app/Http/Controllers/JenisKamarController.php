@@ -144,10 +144,10 @@ class JenisKamarController extends Controller
     
             if ($season) {
                 foreach ($tarifSeasons as $tarifSeason) {
-                    if ($tarifSeason->id_season === $season->id) {
-                        if ($jenisSeason === 'Low') {
+                    if ($tarifSeason->id_season == $season->id) {
+                        if ($jenisSeason == 'Low') {
                             $tarifNormal -= $tarifSeason->tarif;
-                        } elseif ($jenisSeason === 'High') {
+                        } elseif ($jenisSeason == 'High') {
                             $tarifNormal += $tarifSeason->tarif;
                         }
                     }

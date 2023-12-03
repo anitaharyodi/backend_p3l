@@ -98,7 +98,7 @@ class AuthController extends Controller
             ],
         ];
 
-        if ($request->input('role') === 'P') {
+        if ($request->input('role') == 'P') {
             $validationRules['password'] = 'required|string';
         }else {
             $validationRules['id_sm'] = 'required|numeric';
@@ -114,7 +114,7 @@ class AuthController extends Controller
 
         $customer = Customer::create($credentials);
 
-        if ($request->input('role') === 'P') {
+        if ($request->input('role') == 'P') {
             $akun = AkunCustomer::create([
                 'id_customer' => $customer->id, 
                 'email' => $customer->email,
@@ -141,9 +141,9 @@ class AuthController extends Controller
         $email = $request->input('email');
         $role = $request->input('role');
 
-        if($role === 'C') {
+        if($role == 'C') {
             $user = Customer::where('email', $email)->first();
-        }elseif ($role === 'P') {
+        }elseif ($role == 'P') {
             $user = AkunPegawai::where('email', $email)->first();
         }else {
             return response()->json(['message' => 'Role not found'], 404);
@@ -169,9 +169,9 @@ class AuthController extends Controller
         $resetToken = $request->input('token');
         $newPassword = $request->input('password');
     
-        if($role === 'C') {
+        if($role == 'C') {
             $user = AkunCustomer::where('email', $email)->first();
-        }elseif ($role === 'P') {
+        }elseif ($role == 'P') {
             $user = AkunPegawai::where('email', $email)->first();
         }else {
             return response()->json(['message' => 'Role not found'], 404);

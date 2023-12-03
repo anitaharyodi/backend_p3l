@@ -212,7 +212,7 @@ class ReservasiController extends Controller
 
         $oneWeekBeforeCheckin = Carbon::parse($reservation->tgl_checkin)->subWeek();
 
-        if ($reservation->status === 'Confirmed' && Carbon::now()->lessThanOrEqualTo($oneWeekBeforeCheckin)) {
+        if ($reservation->status == 'Confirmed' && Carbon::now()->lessThanOrEqualTo($oneWeekBeforeCheckin)) {
             $reservation->status = 'Cancelled';
             $reservation->uang_jaminan = null;
             $reservation->save();
@@ -288,7 +288,7 @@ class ReservasiController extends Controller
 
         $id = $reservasi->id_booking;
 
-        $prefix = (substr($id, 0, 1) === 'P') ? 'P' : 'G';
+        $prefix = (substr($id, 0, 1) == 'P') ? 'P' : 'G';
 
         // Generate No Invoice
         $dateString = $reservasi->tgl_checkout;
@@ -314,7 +314,7 @@ class ReservasiController extends Controller
 
         if ($request->input_bayar < $cash) {
             return response()->json(['status' => 'F', 'message' => 'Payment is still less than the total price!']);
-        }else if($request->input_bayar === $cash) {
+        }else if($request->input_bayar == $cash) {
             $kembalian = 0;
         }else {
             $kembalian = $request->input_bayar - $cash;
@@ -379,9 +379,9 @@ class ReservasiController extends Controller
                     $reservasi->$column = ($reservasi->uang_jaminan) ? $reservasi->uang_jaminan : 0;
                 }
     
-                if ($prefix === 'G') {
+                if ($prefix == 'G') {
                     $sumGrup += $reservasi->$column;
-                } elseif ($prefix === 'P') {
+                } elseif ($prefix == 'P') {
                     $sumPersonal += $reservasi->$column;
                 }
             }
@@ -437,7 +437,7 @@ class ReservasiController extends Controller
         
             $totalCustomers = $jumlahAnak + $jumlahDewasa;
         
-            $category = (substr($result->reservasis->id_booking, 0, 1) === 'P') ? 'personal' : 'grup';
+            $category = (substr($result->reservasis->id_booking, 0, 1) == 'P') ? 'personal' : 'grup';
         
             if (!isset($counts[$jenisKamar])) {
                 $counts[$jenisKamar] = [
@@ -480,7 +480,7 @@ class ReservasiController extends Controller
                 return $jenisKamar;
             }
     
-            if ($jenisKamar === $currentJenisKamar) {
+            if ($jenisKamar == $currentJenisKamar) {
                 $found = true;
             }
         }

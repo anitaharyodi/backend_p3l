@@ -28,7 +28,7 @@ class ReservasiKamarController extends Controller
                 $tglCheckin = $reservasiKamar->reservasis->tgl_checkin;
                 $tglCheckout = $reservasiKamar->reservasis->tgl_checkout;
 
-                if ($tgl_checkin >= $tglCheckin && $tgl_checkin <= $tglCheckout && $reservasiKamar->reservasis->status === 'Check-In') {
+                if ($tgl_checkin >= $tglCheckin && $tgl_checkin <= $tglCheckout && $reservasiKamar->reservasis->status == 'Check-In') {
                     $isAvailable = false;
                     break;
                 }
@@ -70,7 +70,7 @@ class ReservasiKamarController extends Controller
                 foreach ($reservasi->reservasiKamars as $rooms) {
                     $idJK = $rooms->id_jenis_kamar;
                     $objJK = $jumlahKamarPerJenisKamar->first(function ($item) use ($idJK) {
-                        return $item->id_jenis_kamar === $idJK;
+                        return $item->id_jenis_kamar == $idJK;
                     });
     
                     if ($objJK && $objJK->totalKamar > 0) {
